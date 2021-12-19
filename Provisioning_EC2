@@ -113,3 +113,32 @@ Sign in to the AWS Management Console and open the [IAM Console](https://console
 ```
 
 ## Manage an AWS VPC Internet Gateway
+* Using **ec2_vpc_igw** module to attach an internet gateway to the newly created VPC
+* The **vpc_id** parameter is required to run this play
+* If you use this after the above **ec2_vpc_net** tasks in the previous example, you can get the **vpc_id** from the registered variable ansibleVPC
+``` bash
+ansibleVPC['vpc']['id']
+#Optional syntax
+ansibleVPC.vpc.id
+```
+``` bash
+    - name: Create Internet Gateway for test_vpc
+      ec2_vpc_igw:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        state: present #controls whether the IGW should be present or absent from the VPC.
+        vpc_id: "{{ ansibleVPC.vpc.id }}"
+        tags:
+          Name: test_vpc #tag name
+      register: ansibleVPC_igw #saving results to later extract IGW's ID
+
+    - name: Display test_vpc IGW details
+      debug: #Displaying variable
+        var: test_vpc_igw
+```
+## Manage Subnets in AWS Virtual Private Clouds
+
+* Use the **ec2_vpc_subnet** module to add a subnet to an existing VPC	
+* You must specify the **vpc_id** of the VPC the subnet is in
+
