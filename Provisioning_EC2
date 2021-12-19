@@ -142,3 +142,48 @@ ansibleVPC.vpc.id
 * Use the **ec2_vpc_subnet** module to add a subnet to an existing VPC	
 * You must specify the **vpc_id** of the VPC the subnet is in
 
+``` bash
+    - name: Create Public Subnet in "{{ aws_region }}"
+      ec2_vpc_subnet:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        state: present #specifies subnet should exist
+        cidr: 10.10.0.0/16
+        vpc_id: "{{ ansibleVPC.vpc.id }}" #using ansibleVPC variable from earlier play
+        map_public: yes #to assign instances a public IP address by default
+        tags:
+          Name: Public Subnet
+      register: public_subnet #saving results
+
+    - name: Show Public Subnet Details
+      debug:
+        var: public_subnet
+```
+
+## Manage Routing Tables
+- In order for you VPC to route the traffic for the new subnet, it needs a route table entry
+- Use the **ec2_vpc_route_table** module to create a routing table. It can also manage routes in the table and associate them with an **IGW**
+- You will need the **VPC's ID** and the **IGW's ID**
+
+``` bash
+    - name: Create New Route Table for Public Subnet
+      ec2_vpc_route_table:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        state: present
+        vpc_id: "{{ ansibleVPC.vpc.id }}" #vpc for which you are creating route table
+        tags:
+          Name: rt_testVPC_PublicSubnet
+        subnets:
+          - "{{ public_subnet.subnet.id }}"
+        routes: # the list of routes
+          - dest: 0.0.0.0/0 #the network being routed to, 0.0.0.0/0 is default
+            gateway_id: "{{ ansibleVPC_igw.gateway_id }}"
+      register: rt_ansibleVPC_PublicSubnet
+
+    - name: Display Public Route table
+      debug:
+        var: rt_ansibleVPC_PublicSubnet
+```
