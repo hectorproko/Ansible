@@ -88,26 +88,102 @@ Sign in to the AWS Management Console and open the [IAM Console](https://console
 - name: Start #name of play
   hosts: localhost #Where EC2 cloud modules run on
   remote_user: Ansible #IAM user we created
-  gather_facts: false
+  gather_facts: false #to save time it is disabled
 
-  vars_files:
-    - vars/info.yml
+  vars_files: #loading variables from file
+    - vars/info.yml #contains access key, secret key, region, key name
 
   tasks:
     - name: create a VPC
-      ec2_vpc_net:
-        aws_access_key: "{{ aws_id }}"
+      ec2_vpc_net: #module
+        aws_access_key: "{{ aws_id }}" #variables
         aws_secret_key: "{{ aws_key }}"
         region: "{{ aws_region }}"
-        name: test_vpc
+        name: test_vpc #name of VPC
         cidr_block: 10.10.0.0/16
         tags:
           module: ec2_vpc_net
-        tenancy: default
-        state: present
-      register: ansibleVPC
+        tenancy: default #to run on shared hardware
+        state: present #if you were to exclude state, present is default value
+      register: ansibleVPC #variable to store result of task, contains resource ID
 
-    - name: debugVPC
+    - name: debugVPC #Using module debug to see contents of var AnsibleVPC
       debug:
         var: ansibleVPC
+```
+
+## Manage an AWS VPC Internet Gateway
+* Using **ec2_vpc_igw** module to attach an internet gateway to the newly created VPC
+* The **vpc_id** parameter is required to run this play
+* If you use this after the above **ec2_vpc_net** tasks in the previous example, you can get the **vpc_id** from the registered variable ansibleVPC
+``` bash
+ansibleVPC['vpc']['id']
+#Optional syntax
+ansibleVPC.vpc.id
+```
+``` bash
+    - name: Create Internet Gateway for test_vpc
+      ec2_vpc_igw:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        state: present #controls whether the IGW should be present or absent from the VPC.
+        vpc_id: "{{ ansibleVPC.vpc.id }}"
+        tags:
+          Name: test_vpc #tag name
+      register: ansibleVPC_igw #saving results to later extract IGW's ID
+
+    - name: Display test_vpc IGW details
+      debug: #Displaying variable
+        var: test_vpc_igw
+```
+## Manage Subnets in AWS Virtual Private Clouds
+
+* Use the **ec2_vpc_subnet** module to add a subnet to an existing VPC	
+* You must specify the **vpc_id** of the VPC the subnet is in
+
+``` bash
+    - name: Create Public Subnet in "{{ aws_region }}"
+      ec2_vpc_subnet:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        state: present #specifies subnet should exist
+        cidr: 10.10.0.0/16
+        vpc_id: "{{ ansibleVPC.vpc.id }}" #using ansibleVPC variable from earlier play
+        map_public: yes #to assign instances a public IP address by default
+        tags:
+          Name: Public Subnet
+      register: public_subnet #saving results
+
+    - name: Show Public Subnet Details
+      debug:
+        var: public_subnet
+```
+
+## Manage Routing Tables
+- In order for you VPC to route the traffic for the new subnet, it needs a route table entry
+- Use the **ec2_vpc_route_table** module to create a routing table. It can also manage routes in the table and associate them with an **IGW**
+- You will need the **VPC's ID** and the **IGW's ID**
+
+``` bash
+    - name: Create New Route Table for Public Subnet
+      ec2_vpc_route_table:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        state: present
+        vpc_id: "{{ ansibleVPC.vpc.id }}" #vpc for which you are creating route table
+        tags:
+          Name: rt_testVPC_PublicSubnet
+        subnets: #is a list of subnet IDs to attach to the route table
+          - "{{ public_subnet.subnet.id }}"#public_subnet variable registered earlier in the play
+        routes: # the list of routes
+          - dest: 0.0.0.0/0 #the network being routed to, 0.0.0.0/0 its default
+            gateway_id: "{{ ansibleVPC_igw.gateway_id }}" #s the ID of an IGW
+      register: rt_ansibleVPC_PublicSubnet
+
+    - name: Display Public Route table
+      debug:
+        var: rt_ansibleVPC_PublicSubnet
 ```
