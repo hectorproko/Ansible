@@ -176,11 +176,11 @@ ansibleVPC.vpc.id
         vpc_id: "{{ ansibleVPC.vpc.id }}" #vpc for which you are creating route table
         tags:
           Name: rt_testVPC_PublicSubnet
-        subnets:
-          - "{{ public_subnet.subnet.id }}"
+        subnets: #is a list of subnet IDs to attach to the route table
+          - "{{ public_subnet.subnet.id }}"#public_subnet variable registered earlier in the play
         routes: # the list of routes
           - dest: 0.0.0.0/0 #the network being routed to, 0.0.0.0/0 is default
-            gateway_id: "{{ ansibleVPC_igw.gateway_id }}"
+            gateway_id: "{{ ansibleVPC_igw.gateway_id }}" #s the ID of an IGW
       register: rt_ansibleVPC_PublicSubnet
 
     - name: Display Public Route table
