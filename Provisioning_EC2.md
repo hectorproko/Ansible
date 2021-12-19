@@ -203,12 +203,12 @@ ansibleVPC.vpc.id
         aws_access_key: "{{ aws_id }}"
         aws_secret_key: "{{ aws_key }}"
         region: "{{ aws_region }}"
-        name: "Test Security Group"
+        name: "Test Security Group" #name for the new group
         description: "Test Security Group"
         vpc_id: "{{ ansibleVPC.vpc.id }}"
         tags:
           Name: Test Security Group
-        rules:
+        rules: #defines firewall inbound rules to enforce
           - proto: "tcp"
             ports: "22"
             cidr_ip: 0.0.0.0/0
