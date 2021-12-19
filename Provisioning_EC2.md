@@ -189,3 +189,32 @@ ansibleVPC.vpc.id
 ```
 
 ##  Maintain an EC2 VPC Security Group
+
+- Security Groups help manage firewall rules for your VPCs.
+- Although **vpc_id** is not a required parameter for creating a new group, it will be used to associate the group with the VPC.
+- In order to launch an instance in AWS you need to assign it to a particular security group
+- The security group must be in the same VPC as the resources you want to protect
+- A security group blocks all traffic by default
+- If you want to allow traffic to a port you need to add a rule specifying it
+
+``` bash
+    - name: Create Security Group
+      ec2_group:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        name: "Test Security Group"
+        description: "Test Security Group"
+        vpc_id: "{{ ansibleVPC.vpc.id }}"
+        tags:
+          Name: Test Security Group
+        rules:
+          - proto: "tcp"
+            ports: "22"
+            cidr_ip: 0.0.0.0/0
+      register: my_vpc_sg
+
+    - name: Set Security Group ID in variable
+      set_fact:
+        sg_id: "{{ my_vpc_sg.group_id }}"
+```
