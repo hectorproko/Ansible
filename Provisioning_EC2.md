@@ -218,3 +218,56 @@ ansibleVPC.vpc.id
       set_fact:
         sg_id: "{{ my_vpc_sg.group_id }}"
 ```
+
+## Provisioning Amazon EC2 Instances
+
+### Finding an Existing AMI
+- Before we use ec2 to create the instance, we need to know the ID of the AMI to use
+- Use the **ec2_ami_info** module to find the AMI you want to use
+	(before Ansible 2.9 called this module ec2_ami_facts)
+
+``` bash
+    - name: Find AMIs published by Red Hat (309956199498). Non-beta and x86
+      ec2_ami_info:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        owners: 309956199498 #specifies Red Hat's code
+        filters:
+          architecture: x86_64 #filters the list of AMIs returned by the module
+          name: RHEL-8*HVM-* #Using wildcards to match the name
+      register: amis #storing all returned AMIs that match
+
+    - name: Show AMI
+      debug:
+        var: amis
+
+    - name: Get the latest one
+      set_fact: #filters the images to most recent creation date saves it in latest_ami.
+        latest_ami: "{{ amis.images | sort(attribute='creation_date') | last }} 
+```
+
+### Create, Terminate, Start or Stop an Instance in EC2
+``` bash
+    - name: Basic porvisioning of ec2 instance
+      ec2:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        image: "{{ latest_ami.image_id }}"
+        instance_type: t2.micro
+        key_name: "{{ ssh_keyname }}"
+        count: 1 #if you want to create multiple instances
+        state: present
+        group_id: "{{ my_vpc_sg.group_id }}"
+        wait: yes
+        vpc_subnet_id: "{{ public_subnet.subnet.id }}"
+        assign_public_ip: yes
+        instance_tags:
+          Name: new_demo_template
+      register: ec2info
+
+    - name: Print the results
+      debug:
+        var: ec2info
+```
