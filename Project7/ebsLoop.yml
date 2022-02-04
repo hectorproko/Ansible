@@ -1,0 +1,31 @@
+---
+- name: Start
+  hosts: localhost
+  remote_user: Ansible
+  gather_facts: false
+
+  vars_files:
+    - vars/info.yml
+
+  tasks:
+    - name: Create EBS
+      ec2_vol:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        volume_size: 10
+        volume_type: gp2
+        zone: us-east-1c
+        name: "{{ item.name }}"
+        device_name: "{{ item.mapping }}"
+        instance: i-06521772f149cb3fc
+        state: present
+      loop:
+        - { name: 'Project7Ansible1', mapping: '/dev/xvdf' }
+        - { name: 'Project7Ansible2', mapping: '/dev/xvdg' }
+        - { name: 'Project7Ansible3', mapping: '/dev/xvdh' }
+      register: ansibleEBS
+
+    - name: debugEBS
+      debug:
+        var: ansibleEBS

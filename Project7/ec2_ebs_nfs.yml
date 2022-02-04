@@ -1,0 +1,165 @@
+#Comibing Creation of EC2 with EBS attaching them, Configuring NFS 
+---
+- name: Start
+  hosts: localhost
+  remote_user: Ansible
+  gather_facts: false
+
+  vars_files:
+    - vars/info.yml
+
+  tasks:
+    - name: Find AMIs published by Red Hat (309956199498). Non-beta and x86
+      ec2_ami_info:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        owners: 309956199498
+        filters:
+          architecture: x86_64
+          name: RHEL-8*HVM-*
+      register: amis
+
+    #- name: Show AMI's
+      #debug
+        #var: amis
+
+    - name: Get the latest one
+      set_fact:
+        latest_ami: "{{ amis.images | sort(attribute='creation_date') | last }}"
+
+    - name: Basic porvisioning of ec2 instance
+      ec2:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        image: "{{ latest_ami.image_id }}"
+        instance_type: t2.micro
+        key_name: "{{ ssh_keyname }}"
+        count: 1
+        state: present
+        group_id: sg-0a732c6cbeb3f1025 # Need to be dynamic
+        wait: yes
+        vpc_subnet_id: subnet-18872839 #172.31.80.0/20, needs to be dynamic
+        assign_public_ip: yes
+        instance_tags:
+          Name: NFS
+      register: ec2info
+
+    #- name: Print the results
+      #debug:
+        #var: ec2info
+
+    - name: Create EBS
+      ec2_vol:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        volume_size: 10
+        volume_type: gp2
+        zone: us-east-1c
+        delete_on_termination: true
+        name: "{{ item.name }}"
+        device_name: "{{ item.mapping }}"
+        instance: "{{ ec2info.instance_ids[0] }}" 
+        state: present
+      loop:
+        - { name: 'Project7Ansible1', mapping: '/dev/xvdf' }
+        - { name: 'Project7Ansible2', mapping: '/dev/xvdg' }
+        - { name: 'Project7Ansible3', mapping: '/dev/xvdh' }
+      register: ansibleEBS
+
+    #- name: debugEBS
+      #debug:
+        #var: ansibleEBS
+        
+    - name: Testing DNS
+      debug:
+        var: ec2info.instances[0].public_dns_name
+
+- name: Start Configuring
+  hosts: _NFS
+  gather_facts: false
+
+  tasks:
+    - name: Pinging
+      ping:
+
+    - name: Partitioning
+      parted:
+        device: "{{ item }}"
+        number: 1
+        state: present
+        fs_type: ext4
+      loop:
+        - /dev/xvdf
+        - /dev/xvdg
+        - /dev/xvdh
+
+    - name: Install lvm2 dependency
+      package:
+        name: lvm2
+        state: present
+
+    - name: Create VG
+      lvg:
+        vg: "{{ item.vg }}"
+        pvs: "{{ item.pvs }}"
+      loop:
+        - { vg: 'vg-apps', pvs: '/dev/xvdf1'}
+        - { vg: 'vg-logs', pvs: '/dev/xvdg1'}
+        - { vg: 'vg-opt', pvs: '/dev/xvdh1'}
+
+    - name: Create LV
+      lvol:
+        vg: "{{ item.vg }}"
+        lv: "{{ item.lv }}"
+        size: 100%FREE
+      loop:
+        - { vg: 'vg-apps', lv: 'lv-apps'}
+        - { vg: 'vg-logs', lv: 'lv-logs'}
+        - { vg: 'vg-opt', lv: 'lv-opt'}
+
+    - name: Creating mounting directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: nobody
+        mode: '0777'
+      loop:
+        - /mnt/apps
+        - /mnt/logs
+        - /mnt/opt
+
+    - name: Format
+      filesystem:
+        fstype: xfs
+        dev: "{{ item }}"
+      loop:
+        - /dev/vg-apps/lv-apps
+        - /dev/vg-logs/lv-logs
+        - /dev/vg-opt/lv-opt
+
+    - name: Mount
+      mount:
+        path: "{{ item.dir}}"
+        src: "{{ item.lv }}"
+        fstype: xfs
+        state: mounted
+      loop:
+        -  { dir: '/mnt/apps', lv: '/dev/vg-apps/lv-apps' }
+        -  { dir: '/mnt/logs', lv: '/dev/vg-logs/lv-logs' }
+        -  { dir: '/mnt/opt', lv: '/dev/vg-opt/lv-opt' }
+
+    - name: fstab
+      lineinfile:
+        path: /etc/fstab
+        line: "{{ item }}"
+      loop:
+        - /dev/vg-apps/lv-apps /mnt/apps xfs defaults 0 0
+        - /dev/vg-logs/lv-logs /mnt/logs xfs defaults 0 0
+        - /dev/vg-opt/lv-opt /mnt/opt xfs defaults 0 0
+
+    - name: daemon-reload
+      systemd:
+        daemon_reload: yes

@@ -1,0 +1,139 @@
+---
+- name: Start
+  hosts: localhost
+  remote_user: Ansible
+  gather_facts: false
+
+  vars_files:
+    - vars/info.yml
+
+  tasks:
+    - name: create a VPC
+      ec2_vpc_net:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        name: test_vpc
+        cidr_block: 10.10.0.0/16
+        tags:
+          module: ec2_vpc_net
+        tenancy: default
+        state: present
+      register: ansibleVPC
+
+    - name: debugVPC
+      debug:
+        var: ansibleVPC
+
+    - name: Create Internet Gateway for test_vpc
+      ec2_vpc_igw:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        state: present
+        vpc_id: "{{ ansibleVPC.vpc.id }}"
+        tags:
+          Name: test_vpc
+      register: ansibleVPC_igw
+
+    - name: Display test_vpc IGW details
+      debug:
+        var: test_vpc_igw
+
+    - name: Create Public Subnet in "{{ aws_region }}"
+      ec2_vpc_subnet:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        state: present
+        cidr: 10.10.0.0/16
+        vpc_id: "{{ ansibleVPC.vpc.id }}"
+        map_public: yes
+        tags:
+          Name: Public Subnet
+      register: public_subnet
+
+    - name: Show Public Subnet Details
+      debug:
+        var: public_subnet
+
+    - name: Create New Route Table for Public Subnet
+      ec2_vpc_route_table:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        state: present
+        vpc_id: "{{ ansibleVPC.vpc.id }}"
+        tags:
+          Name: rt_testVPC_PublicSubnet
+        subnets:
+          - "{{ public_subnet.subnet.id }}"
+        routes:
+          - dest: 0.0.0.0/0
+            gateway_id: "{{ ansibleVPC_igw.gateway_id }}"
+      register: rt_ansibleVPC_PublicSubnet
+
+    - name: Display Public Route table
+      debug:
+        var: rt_ansibleVPC_PublicSubnet
+
+    - name: Create Security Group
+      ec2_group:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        name: "Test Security Group"
+        description: "Test Security Group"
+        vpc_id: "{{ ansibleVPC.vpc.id }}"
+        tags:
+          Name: Test Security Group
+        rules:
+          - proto: "tcp"
+            ports: "22"
+            cidr_ip: 0.0.0.0/0
+      register: my_vpc_sg
+
+    - name: Set Security Group ID in variable
+      set_fact:
+        sg_id: "{{ my_vpc_sg.group_id }}"
+
+    - name: Find AMIs published by Red Hat (309956199498). Non-beta and x86
+      ec2_ami_info:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        owners: 309956199498
+        filters:
+          architecture: x86_64
+          name: RHEL-8*HVM-*
+      register: amis
+
+    - name: Show AMI's
+      debug:
+        var: amis
+
+    - name: Get the latest one
+      set_fact:
+        latest_ami: "{{ amis.images | sort(attribute='creation_date') | last }}"
+
+    - name: Basic porvisioning of ec2 instance
+      ec2:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        image: "{{ latest_ami.image_id }}"
+        instance_type: t2.micro
+        key_name: "{{ ssh_keyname }}"
+        count: 1
+        state: present
+        group_id: "{{ my_vpc_sg.group_id }}"
+        wait: yes
+        vpc_subnet_id: "{{ public_subnet.subnet.id }}"
+        assign_public_ip: yes
+        instance_tags:
+          Name: new_demo_template
+      register: ec2info
+
+    - name: Print the results
+      debug:
+        var: ec2info
