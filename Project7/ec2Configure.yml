@@ -1,7 +1,10 @@
----
-- name: Start s
-  hosts: ec2 #ec2
+- name: Start Configuring #Second Play
+  hosts: _NFS
   gather_facts: false
+  remote_user: ec2-user
+
+  vars_files:
+    - vars/info.yml
 
   tasks:
     - name: Pinging
