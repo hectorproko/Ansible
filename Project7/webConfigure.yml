@@ -1,0 +1,45 @@
+- name: Configuring Database #Second Play
+  hosts: _web7
+  gather_facts: false
+  remote_user: ec2-user
+
+  vars_files:
+    - vars/info.yml
+
+  tasks:
+    - name: Pinging
+      ping:
+
+    #maybe mounting shoudl be done first, create dirs, not really, no need to create dirs
+
+    - name: Install lvm2 dependency
+      package:
+        name: 
+          - mysql
+          - nfs-utils
+          - nfs4-acl-tools
+          - httpd
+          - git
+        state: present
+        
+    - name: fstab
+      lineinfile:
+        path: /etc/fstab
+        line: "{{ item }}"
+      loop:
+        - 172.31.88.84:/mnt/apps /var/www nfs defaults 0 0
+        - 172.31.88.84:/mnt/logs /var/log/httpd/ nfs defaults 0 0
+
+    - name: daemon-reload
+      systemd:
+        daemon_reload: yes
+        
+ #sudo mount -t nfs -o rw,nosuid 172.31.88.22:/mnt/apps /var/www 
+ #mount -t nfs -o rw,nosuid 172.31.88.22:/mnt/logs /var/log/httpd/
+    
+    
+    #sudo mkdir /var/www install of httpds creates the dir
+    # (worked)
+
+    #Mounted the httpd logs location to shared log folder with this command in the remote/webserver
+    #sudo 

@@ -1,0 +1,97 @@
+#Comibing Creation of EC2 with EBS attaching them, Configuring NFS 
+---
+- name: Start
+  hosts: localhost
+  remote_user: Ansible
+  gather_facts: false
+
+  vars_files:
+    - vars/info.yml
+
+  tasks:
+    - name: Find AMIs published by Red Hat (309956199498). Non-beta and x86
+      ec2_ami_info:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        owners: 309956199498
+        filters:
+          architecture: x86_64
+          name: RHEL-8*HVM-*
+      register: amis
+
+    #- name: Show AMI's
+      #debug
+        #var: amis
+
+    - name: Get the latest one
+      set_fact:
+        latest_ami: "{{ amis.images | sort(attribute='creation_date') | last }}"
+
+    - name: Provisioning NFS/DB
+      ec2:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        image: "{{ latest_ami.image_id }}"
+        instance_type: t2.micro
+        key_name: "{{ ssh_keyname }}"
+        count: 1
+        state: present
+        group_id: sg-0a732c6cbeb3f1025 # Need to be dynamic
+        wait: yes
+        vpc_subnet_id: subnet-18872839 #172.31.80.0/20, needs to be dynamic
+        assign_public_ip: yes
+        instance_tags:
+          Name: NFS
+      register: ec2nfs
+
+    #- name: Print the results
+      #debug:
+        #var: ec2nfs
+
+    - name: Create EBS
+      ec2_vol:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        volume_size: 10
+        volume_type: gp2
+        zone: us-east-1c
+        delete_on_termination: true
+        name: "{{ item.name }}"
+        device_name: "{{ item.mapping }}"
+        instance: "{{ ec2nfs.instance_ids[0] }}" 
+        state: present
+      loop:
+        - { name: 'Project7Ansible1', mapping: '/dev/xvdf' }
+        - { name: 'Project7Ansible2', mapping: '/dev/xvdg' }
+        - { name: 'Project7Ansible3', mapping: '/dev/xvdh' }
+      register: ansibleEBS
+
+    #- name: debugEBS
+      #debug:
+        #var: ansibleEBS
+        
+    - name: Testing DNS
+      debug:
+        var: ec2nfs.instances[0].public_dns_name
+
+
+    - name: WebServer
+      ec2:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        image: ami-019599717e2dd5baa #Static for testing image: "{{ latest_ami.image_id }}"
+        instance_type: t2.micro
+        key_name: "{{ ssh_keyname }}"
+        count: 1 #number of instnaces to launch
+        state: present
+        group_id: sg-0039926d89c242960 # Need to be dynamic, diff than NFS one, this one open 80
+        wait: yes
+        vpc_subnet_id: subnet-18872839 #172.31.80.0/20, needs to be dynamic
+        assign_public_ip: yes
+        instance_tags:
+          Name: web7 # 7 for project 7
+      register: ec2web

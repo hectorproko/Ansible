@@ -88,3 +88,15 @@
     - name: daemon-reload
       systemd:
         daemon_reload: yes
+        
+#- name: Start Configuring #Second Play web
+  #hosts: _web7
+  #gather_facts: false
+  #remote_user: ec2-user
+
+  #vars_files:
+    #- vars/info.yml
+
+  #tasks:
+    #- name: Pinging
+      #ping:

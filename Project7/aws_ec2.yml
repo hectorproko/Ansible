@@ -9,6 +9,7 @@ regions:
 keyed_groups:
     - key: tags.Name
     
-filters:
-  tag:Name: NFS
+#filters: #No need for filter, eveything is grouped
+#  tag:
+#     - Name: NFS
 hostnames: dns-name

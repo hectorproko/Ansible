@@ -1,0 +1,24 @@
+- name: Configuring Database #Second Play
+  hosts: _NFS
+  gather_facts: false
+  remote_user: ec2-user
+
+  vars_files:
+    - vars/info.yml
+
+  tasks:
+    - name: Pinging
+      ping:
+
+    - name: Create a new database with name 'bobdata'
+      mysql_db:
+        name: bobdata
+        state: present
+        
+    - name: Create database user with name 'bob' and password '12345' with all database privileges
+      mysql_user:
+        name: bob
+        password: 12345
+        priv: '*.*:ALL' #all database privileges
+        host: 172.31.80.0/20 #the host part of the username
+        state: present
