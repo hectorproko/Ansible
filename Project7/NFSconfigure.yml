@@ -28,6 +28,11 @@
           - nfs-utils
         state: present
 
+    - name: Start NFS on boot
+      ansible.builtin.service:
+        name: nfs-server
+        enabled: yes
+
     - name: Create VG
       lvg:
         vg: "{{ item.vg }}"
