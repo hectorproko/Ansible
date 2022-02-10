@@ -21,9 +21,11 @@
         - /dev/xvdg
         - /dev/xvdh
 
-    - name: Install lvm2 dependency
+    - name: Install lvm2 dependency, nfs-utils
       package:
-        name: lvm2
+        name: 
+          - lvm2
+          - nfs-utils
         state: present
 
     - name: Create VG
@@ -44,18 +46,8 @@
         - { vg: 'vg-apps', lv: 'lv-apps'}
         - { vg: 'vg-logs', lv: 'lv-logs'}
         - { vg: 'vg-opt', lv: 'lv-opt'}
-
-    - name: Creating mounting directories
-      file:
-        path: "{{ item }}"
-        state: directory
-        owner: nobody
-        mode: '0777'
-      loop:
-        - /mnt/apps
-        - /mnt/logs
-        - /mnt/opt
-
+      ignore_errors: yes #for testing purpose, when running playbook twice this fails
+      
     - name: Format
       filesystem:
         fstype: xfs
@@ -64,6 +56,19 @@
         - /dev/vg-apps/lv-apps
         - /dev/vg-logs/lv-logs
         - /dev/vg-opt/lv-opt
+    #------------------------------------------------
+    - name: Creating mounting directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: nobody
+        group: nobody
+        mode: '0777'
+      loop:
+        - /mnt/apps
+        - /mnt/logs
+        - /mnt/opt
+#start enable nfs-server.service
 
     - name: Mount
       mount:
@@ -87,16 +92,43 @@
 
     - name: daemon-reload
       systemd:
+        name: nfs-server
+        state: restarted
         daemon_reload: yes
+    
+    #There is module for this #Repeated, wont change now it works
+    - name: fstab #this doesnt show on "mount" so it is not active or neede? Lets try commenting
+      lineinfile:
+        path: /etc/fstab
+        line: "{{ item }}"
+      loop:
+        - 172.31.88.84:/mnt/apps /var/www nfs defaults 0 0
+        - 172.31.88.84:/mnt/logs /var/log/httpd/ nfs defaults 0 0
         
-#- name: Start Configuring #Second Play web
-  #hosts: _web7
-  #gather_facts: false
-  #remote_user: ec2-user
+    - name: exports 
+      lineinfile:
+        path: /etc/exports
+        line: "{{ item }}"
+      loop:         #subnet
+        - /mnt/apps 172.31.80.0/20(rw,sync,no_all_squash,no_root_squash)
+        - /mnt/logs 172.31.80.0/20(rw,sync,no_all_squash,no_root_squash)
+        - /mnt/opt 172.31.80.0/20(rw,sync,no_all_squash,no_root_squash)
 
-  #vars_files:
-    #- vars/info.yml
-
-  #tasks:
-    #- name: Pinging
-      #ping:
+    - name: exportfs -arv
+      shell:
+        cmd: exportfs -arv
+    
+    - name: Changing dir owner/permission #running it once doesnt change owner/permission
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: nobody
+        group: nobody
+        mode: '0777'
+      loop:
+        - /mnt/apps
+        - /mnt/logs
+        - /mnt/opt
+        
+        
+#Important note: In order for NFS server to be accessible from your client, you must also open following ports: TCP 111, UDP 111, UDP 2049
