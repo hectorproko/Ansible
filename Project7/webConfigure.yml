@@ -7,11 +7,13 @@
     - vars/info.yml
 
   tasks:
+    - name: Settting NFS private IP variable
+      set_fact:
+        NFS_ip: 172.31.91.85 #<change IP of NFS, pending 
+      
     - name: Pinging
       ping:
-
-    #maybe mounting shoudl be done first, create dirs, not really, no need to create dirs
-
+    
     - name: Install NFS client
       package:
         name: 
@@ -41,7 +43,7 @@
     - name: Mount 
       ansible.posix.mount:
         path: /var/www
-        src: 172.31.80.215:/mnt/apps #need to find a way to make this a var
+        src: "{{ NFS_ip }}:/mnt/apps" #need to find a way to make this a var
         fstype: nfs
         opts: rw,nosuid
         state: mounted #this mounts it
