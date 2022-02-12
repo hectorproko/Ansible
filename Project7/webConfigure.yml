@@ -7,9 +7,9 @@
     - vars/info.yml
 
   tasks:
-    - name: Settting NFS private IP variable
-      set_fact:
-        NFS_ip: 172.31.91.85 #<change IP of NFS, pending 
+    #- name: Settting NFS private IP variable
+      #set_fact:
+        #NFS_ip: {{ privateIP }} #<change IP of NFS, pending 
       
     - name: Pinging
       ping:
@@ -31,7 +31,8 @@
       #loop:
         #- 172.31.81.122:/mnt/apps /var/www nfs defaults 0 0
         #- 172.31.81.122:/mnt/logs /var/log/httpd/ nfs defaults 0 0
-     
+        
+    #this stopped working
     - name: Create www dir
       file:
         path: /var/www
@@ -39,43 +40,42 @@
         owner: nobody
         group: nobody
         mode: '0777'
-#mount manually here
-    - name: Mount 
+
+    - name: Mount #fails if NFS server is not up
       ansible.posix.mount:
         path: /var/www
-        src: "{{ NFS_ip }}:/mnt/apps" #need to find a way to make this a var
+        src: "{{ privateIP }}:/mnt/apps" #NFS server PrivateIP
         fstype: nfs
         opts: rw,nosuid
         state: mounted #this mounts it
-    
-    - name: daemon-reload
-      systemd:
-        daemon_reload: yes
         
+ #sudo mount -t nfs -o rw,nosuid 172.31.80.216:/mnt/apps /var/www 
+ #sudo mount -t nfs -o rw,nosuid 172.31.88.22:/mnt/logs /var/log/httpd/
+
     - name: Install Apache
       package:
         name: httpd
-        state: present       
+        state: present  
+
+    - name: Disable default site
+      command: mv /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/welcome.backup
+      
+    - name: daemon-reload
+      systemd:
+        name: httpd
+        state: started
+        daemon_reload: yes     
          
-         
- #sudo mount -t nfs -o rw,nosuid 172.31.80.216:/mnt/apps /var/www 
- #sudo mount -t nfs -o rw,nosuid 172.31.88.22:/mnt/logs /var/log/httpd/
+    - name: Git
+      ansible.builtin.git:
+        repo: 'https://github.com/hectorproko/tooling.git'
+        dest: /home/ec2-user/tooling 
+
+    - name: Copydir
+      command: cp -R /home/ec2-user/tooling/html /var/wwww/
+      
+
     
     
-    #sudo mkdir /var/www install of httpds creates the dir
 
 
-    #Mounted the httpd logs location to shared log folder with this command in the remote/webserver
-    #sudo 
-
-     
-#maybe create the dir, before installation?
-#3. Mount /var/www/ and target the NFS server’s export for apps
-#sudo mkdir /var/www
-#sudo mount -t nfs -o rw,nosuid <NFS-Server-Private-IP-Address>:/mnt/apps /var/www
-#4. Verify that NFS was mounted successfully by running df -h. Make sure that the changes will persist on Web Server after reboot:
-#sudo vi /etc/fstab
-#add following line
-#<NFS-Server-Private-IP-Address>:/mnt/apps /var/www nfs defaults 0 0
-#5. Install Apache
-#sudo yum install httpd -y

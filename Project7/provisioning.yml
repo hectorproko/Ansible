@@ -72,10 +72,13 @@
     #- name: debugEBS
       #debug:
         #var: ansibleEBS
-        
-    - name: Testing DNS
+    - name: Setting facts so that they will be persisted in the fact cache
+      set_fact:
+        privateIP: ec2nfs.instances[0].private_ip
+    
+    - name: Output Private IP
       debug:
-        var: ec2nfs.instances[0].public_dns_name
+        var: "{{ privateIP }}"
 
 
     - name: WebServer
@@ -95,3 +98,7 @@
         instance_tags:
           Name: web7 # 7 for project 7
       register: ec2web
+    
+    #Seems to be creating a pantom "ec2nfs.instances[0].private_ip": "172.31.93.42"
+    - name: Calling Playbook
+      command: ansible-playbook NFSconfigure.yml
