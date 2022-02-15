@@ -1,0 +1,17 @@
+- name: Configuring Database #Second Play
+  hosts: _web7
+  gather_facts: false
+  remote_user: ec2-user
+
+  vars_files:
+    - vars/info.yml
+
+  tasks:
+    - name: Pinging
+      ping:
+
+    - name: Install MySQL-Client
+      package:
+        name: 
+          - mysql #comes installed with redhat, i think
+        state: present
