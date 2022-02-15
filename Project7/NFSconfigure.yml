@@ -1,4 +1,4 @@
-- name: Start Configuring #Second Play
+- name: Start Configuring NFS #Second Play
   hosts: _NFS
   gather_facts: false
   remote_user: ec2-user
@@ -26,6 +26,7 @@
         name: 
           - lvm2
           - nfs-utils
+          - git
         state: present
 
     - name: Start NFS on boot
@@ -47,6 +48,7 @@
         vg: "{{ item.vg }}"
         lv: "{{ item.lv }}"
         size: 100%FREE
+        shrink: no
       loop:
         - { vg: 'vg-apps', lv: 'lv-apps'}
         - { vg: 'vg-logs', lv: 'lv-logs'}
@@ -116,6 +118,20 @@
         - /mnt/apps
         - /mnt/logs
         - /mnt/opt
+        
+    - name: Git
+      ansible.builtin.git:
+        repo: 'https://github.com/hectorproko/tooling.git'
+        dest: /home/ec2-user/tooling 
+
+    - name: Copydir #This turns apps back to root
+      command: cp -R /home/ec2-user/tooling/html /mnt/apps   
+      
+
+    
+#There /mnt seems to loose teh nobody:nobody adn permission apps confirmed for now        
+        
+        
         
         
 #Important note: In order for NFS server to be accessible from your client, you must also open following ports: TCP 111, UDP 111, UDP 2049

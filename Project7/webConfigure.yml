@@ -1,4 +1,4 @@
-- name: Configuring Database #Second Play
+- name: Configuring Web #Second Play
   hosts: _web7
   gather_facts: false
   remote_user: ec2-user
@@ -20,7 +20,6 @@
           - mysql
           - nfs-utils
           - nfs4-acl-tools
-          - git
         state: present
 #Need to turn on NFS
 
@@ -56,7 +55,12 @@
       package:
         name: httpd
         state: present  
-
+        
+    - name: Start Apache on boot
+      ansible.builtin.service:
+        name: httpd
+        enabled: yes
+        
     - name: Disable default site
       command: mv /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/welcome.backup
       
@@ -64,15 +68,13 @@
       systemd:
         name: httpd
         state: started
-        daemon_reload: yes     
-         
-    - name: Git
-      ansible.builtin.git:
-        repo: 'https://github.com/hectorproko/tooling.git'
-        dest: /home/ec2-user/tooling 
+        daemon_reload: yes
+        
+#sudo setenforce 0 need to fstab this
 
-    - name: Copydir
-      command: cp -R /home/ec2-user/tooling/html /var/wwww/
+    - name: Disable SELinux #need to check if it remains after boot
+      ansible.posix.selinux:
+        state: disabled
       
 
     
