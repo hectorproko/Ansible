@@ -1,5 +1,0 @@
-aws_id: AKIA4GNRQHE34GHJKPOJ
-aws_key: JasUUyeuKfYRjyfcqyeBPS2o715yrLwI3GjSunI+
-aws_region: us-east-1
-ssh_keyname: daro.io #need for provisioning module ec2
-ansible_ssh_private_key_file: daro.io.pem #used by the configuring part
