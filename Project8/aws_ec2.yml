@@ -1,0 +1,15 @@
+plugin: aws_ec2
+#aws_profile: default #another way but requies AWSCLI install
+remote_user: Ansible
+vars_files:
+  - vars/info.yml
+regions:
+  - "us-east-1"
+  
+keyed_groups:
+    - key: tags.Name
+    
+#filters: #No need for filter, eveything is grouped
+#  tag:
+#     - Name: NFS
+hostnames: dns-name
