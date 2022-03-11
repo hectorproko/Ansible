@@ -6,7 +6,7 @@
   gather_facts: false
 
   vars_files:
-    - vars/info.yml
+    - /etc/ansible/vars/info.yml
 
   tasks:
     - name: Find AMIs published by Red Hat (309956199498). Non-beta and x86
@@ -100,5 +100,5 @@
       register: ec2web
     
     #Seems to be creating a pantom "ec2nfs.instances[0].private_ip": "172.31.93.42"
-    - name: Calling Playbook
-      command: ansible-playbook NFSconfigure.yml
+    #- name: Calling Playbook
+      #command: ansible-playbook NFSconfigure.yml

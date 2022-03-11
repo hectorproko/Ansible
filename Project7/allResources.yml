@@ -5,7 +5,7 @@
   gather_facts: false
 
   vars_files:
-    - vars/info.yml
+    - /etc/ansible/vars/info.yml
 
   tasks:
     - name: create a VPC

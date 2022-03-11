@@ -1,7 +1,7 @@
-\<VirtualHost *:80>
+<VirtualHost *:80>
     <Proxy "balancer://mycluster">
-        BalancerMember http://172.31.86.95:80 loadfactor=5 timeout=1
-        BalancerMember http://172.31.81.46:80 loadfactor=5 timeout=1
+        BalancerMember http://172.31.91.224:80 loadfactor=5 timeout=1
+        BalancerMember http://172.31.91.115:80 loadfactor=5 timeout=1
         ProxySet lbmethod=bytraffic
         # ProxySet lbmethod=byrequests
     </Proxy>
@@ -11,6 +11,6 @@
 
         #ServerAdmin webmaster@localhost
         #DocumentRoot /var/www/html
-        ErrorLog /error.log
-        CustomLog /access.log combined
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>

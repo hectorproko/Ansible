@@ -4,7 +4,7 @@
   remote_user: ubuntu
 
   vars_files:
-    - vars/info.yml
+    - /etc/ansible/vars/info.yml
 
   tasks:
     - name: Pinging
@@ -29,32 +29,6 @@
         - lbmethod_bytraffic
       ignore_errors: yes  
       
-#Move this after configuration
-    - name: Restart apache2
-      ansible.builtin.systemd:
-        state: restarted
-        name: apache2
-      ignore_errors: yes  
- 
-    # - name: Backup 000-default.conf
-      # raw: cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/000-default.confBAK 
-      
-#Doesnt work, this is from local to remote
-    # - name: Copy file with owner and permissions
-      # ansible.builtin.copy:
-        # src: /etc/apache2/sites-available/000-default.conf
-        # dest: /home/ubuntu/000-default.conf
-        # owner: hector
-        # group: hector
-        # mode: '0644'
-    
-
-    # - name: cp 000-default.conf
-      # command: "{{ item }}"
-      # loop: 
-        # - cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/000-default.confBAK  
-        #- cp /etc/apache2/sites-available/000-default.conf /home/ubuntu/000-default.conf #not needed
-        
     - name: 000-default.conf Backup
       ansible.builtin.copy:
         src: /etc/apache2/sites-available/000-default.conf
@@ -71,18 +45,9 @@
         owner: ubuntu
         group: ubuntu
         mode: '0644'
-
-#not needed
-    # - name: Change owner
-      # file:
-        # path: /home/ubuntu/000-default.conf 
-        # owner: ubuntu
-        # group: ubuntu
-    
-    # - name: echo
-      # raw: "{{ item }}" #echo "TEST" > /home/ubuntu/000-default.conf
-      # loop:
-        # - echo "{{ config }}" > /home/ubuntu/000-default.conf #this did not work
-        # - cp /home/ubuntu/000-default.conf /etc/apache2/sites-available/000-default.conf
         
-#use copy module to copy from llocal to remote
+    - name: Restart apache2
+      ansible.builtin.systemd:
+        state: restarted
+        name: apache2
+      ignore_errors: yes  

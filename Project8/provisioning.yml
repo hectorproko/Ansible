@@ -6,7 +6,7 @@
   gather_facts: false
 
   vars_files:
-    - vars/info.yml
+    - /etc/ansible/vars/info.yml
 
   tasks:
     - name: Find AMIs published by Red Hat (309956199498). Non-beta and x86

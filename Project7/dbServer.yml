@@ -4,7 +4,7 @@
   remote_user: ec2-user
 
   vars_files:
-    - vars/info.yml
+    - /etc/ansible/vars/info.yml
 
   tasks:
     - name: Pinging
