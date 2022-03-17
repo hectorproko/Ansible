@@ -127,11 +127,67 @@
     - name: Copydir #This turns apps back to root
       command: cp -R /home/ec2-user/tooling/html /mnt/apps   
       
+#-----------Database Configuration
 
+    - name: Install MySQL
+      package:
+        name: 
+          - mysql #do we need it? #this is client, will remove later after testing
+          - mysql-server
+        state: present
+
+    - name: Start msyql
+      ansible.builtin.service:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: Make sure pymysql is present
+      pip:
+        name: pymysql
+        state: present
+
+    - name: Create a new database with name 'tooling'
+      mysql_db:
+        name: tooling
+        state: present
+        
+    #Name Runnign scrip
+    - name: Running script to insert in tooling
+      raw: mysql tooling < /home/ec2-user/tooling/tooling-db.sql
+      
+    - name: Inserting a user to test
+      community.mysql.mysql_query:
+        login_db: tooling
+        query: INSERT INTO `users` (`id`, `username`, `password`, `email`, `user_type`, `status`) VALUES (2, 'myuser', '12345', 'user@mail.com', 'admin', '1');   
+        # named_args:
+          # user: myuser
+          # pass: 12345
+        #query: INSERT INTO `users` (`id`, `username`, `password`, `email`, `user_type`, `status`) VALUES (2, '%(user)s', '%(pass)s', 'user@mail.com', 'admin', '1');  
+        
+    - name: Create database user with name 'webaccess' and password '12345' with all database privileges
+      mysql_user:
+        name: webaccess
+        password: 12345
+        priv: '*.*:ALL' #all database privileges
+        host: 172.31.80.0/20 #the host part of the username, subnet
+        state: present
+        
+    #This is not working    
+    - name: Input tooling credentials
+      ansible.builtin.replace:
+        path: /mnt/apps/html/functions.php
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.line }}"
+      loop:
+        - { regexp: '^admin', line: "webaccess" }
+        - { regexp: '^admin', line: "12345" }
+    - name: bypass, replace module not having desired effect
+      raw: sed -i '5 s/admin/{{ item }}/' /mnt/apps/html/functions.php
+      loop:
+        - webaccess
+        - 123456
+        
     
 #There /mnt seems to loose teh nobody:nobody adn permission apps confirmed for now        
-        
-        
-        
-        
 #Important note: In order for NFS server to be accessible from your client, you must also open following ports: TCP 111, UDP 111, UDP 2049
