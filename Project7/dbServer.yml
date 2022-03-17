@@ -33,6 +33,19 @@
         name: tooling
         state: present
         
+    #Name Runnign scrip
+    - name: Running script to insert in tooling
+      raw: mysql tooling < /home/ec2-user/tooling/tooling-db.sql
+      
+    - name: Inserting a user to test
+      community.mysql.mysql_query:
+        login_db: tooling
+        query: INSERT INTO `users` (`id`, `username`, `password`, `email`, `user_type`, `status`) VALUES (2, 'myuser', '12345', 'user@mail.com', 'admin', '1');   
+        # named_args:
+          # user: myuser
+          # pass: 12345
+        #query: INSERT INTO `users` (`id`, `username`, `password`, `email`, `user_type`, `status`) VALUES (2, '%(user)s', '%(pass)s', 'user@mail.com', 'admin', '1');  
+        
     - name: Create database user with name 'webaccess' and password '12345' with all database privileges
       mysql_user:
         name: webaccess
@@ -56,6 +69,12 @@
         - webaccess
         - 123456
         
+#1 Run script to create sudo mysql tooling < /home/ec2-user/tooling/tooling-db.sql
+
+
+#2 Insert myuser with password 12345 to test
+
+
 
      #$db = mysqli_connect('mysql.tooling.svc.cluster.local', 'admin', 'admin', 'tooling');
      #sudo mysql tooling < tooling/tooling-db.sql  #create table users

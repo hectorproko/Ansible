@@ -1,0 +1,111 @@
+#Comibing Creation of EC2 with EBS attaching them, Configuring NFS 
+---
+- name: Start
+  hosts: localhost
+  remote_user: Ansible
+  gather_facts: false
+
+  vars_files:
+    - /etc/ansible/vars/info.yml
+
+  tasks:
+    - name: Find AMIs published by Red Hat (309956199498). Non-beta and x86
+      ec2_ami_info:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        owners: 309956199498
+        filters:
+          architecture: x86_64
+          name: RHEL-8*HVM-*
+      register: amis
+
+    #- name: Show AMI's
+      #debug
+        #var: amis
+
+    - name: Get the latest one
+      set_fact:
+        latest_ami: "{{ amis.images | sort(attribute='creation_date') | last }}"
+
+    - name: Ubuntu Ngnix LB
+      ec2:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        image: ami-04505e74c0741db8d # Ubuntu 64-bit x86
+        instance_type: t2.micro
+        key_name: "{{ ssh_keyname }}"
+        count: 1
+        state: present
+        group_id: sg-0a732c6cbeb3f1025 # Need to be dynamic
+        wait: yes
+        vpc_subnet_id: subnet-18872839 #172.31.80.0/20, needs to be dynamic
+        assign_public_ip: yes
+        instance_tags:
+          Name: LB10
+      register: LBinfo
+
+    - name: Output var LBinfo
+      debug:
+        var: LBinfo.instance_ids[0] #to display no need put brackets but you do needed for modules ike ec2_eip, turns it into a string
+
+    - name: Output var LBinfo
+      debug:
+        var: LBinfo.instances[0].id #to display no need put brackets
+
+        
+    - name: allocate a new elastic IP 
+      community.aws.ec2_eip:
+        state: present
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        device_id: "{{ LBinfo.instance_ids[0] }}" ##<< works, brackets make difference ##LBinfo.instances[0]. does not work ##LBinfo.instance_ids[0] did not work
+      register: eip
+
+    # - name: output the Elastic IP
+      # ansible.builtin.debug:
+        # msg: "Allocated IP is {{ eip.public_ip }}" 
+
+    # - name: output the Elastic IP
+      # ansible.builtin.debug:
+        # msg: "Allocated IP is {{ eip }}"
+
+    # - name: WebServer
+      # ec2:
+        # aws_access_key: "{{ aws_id }}"
+        # aws_secret_key: "{{ aws_key }}"
+        # region: "{{ aws_region }}"
+        # image:  "{{ latest_ami.image_id }}" #Static for testing image: "{{ latest_ami.image_id }}"
+        # instance_type: t2.micro
+        # key_name: "{{ ssh_keyname }}"
+        # count: 2 #number of instnaces to launch
+        # state: present
+        # group_id: sg-0039926d89c242960 # Need to be dynamic, diff than NFS one, this one open 80
+        # wait: yes
+        # vpc_subnet_id: subnet-18872839 #172.31.80.0/20, needs to be dynamic
+        # assign_public_ip: yes
+        # instance_tags:
+          # Name: web8 # 7 for project 7
+      # register: ec2web
+
+    # - name: Setting facts so that they will be persisted in the fact cache
+      # set_fact:
+        # privateIP: ec2web.instances[0].private_ip
+        
+    # - name: Setting facts so that they will be persisted in the fact cache
+      # set_fact:
+        # privateIP2: ec2web.instances[1].private_ip
+        
+    # - name: Output Private IP
+      # debug:
+        # var: "{{ privateIP }}"
+        
+    # - name: Output Private IP
+      # debug:
+        # var: "{{ privateIP2 }}"        
+        
+    #Seems to be creating a pantom "ec2nfs.instances[0].private_ip": "172.31.93.42"
+    #- name: Calling Playbook
+      #command: ansible-playbook NFSconfigure.yml

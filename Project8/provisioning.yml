@@ -28,7 +28,7 @@
       set_fact:
         latest_ami: "{{ amis.images | sort(attribute='creation_date') | last }}"
 
-    - name: Ubuntu LB
+    - name: Ubuntu Apache LB
       ec2:
         aws_access_key: "{{ aws_id }}"
         aws_secret_key: "{{ aws_key }}"

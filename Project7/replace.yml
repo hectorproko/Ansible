@@ -1,0 +1,29 @@
+- name: Configuring Database #Second Play
+  hosts: _NFS
+  gather_facts: false
+  remote_user: ec2-user
+
+  vars_files:
+    - /etc/ansible/vars/info.yml
+
+  tasks:
+    - name: Pinging
+      ping:
+      
+
+    #This is not working    
+    - name: Input tooling credentials
+      ansible.builtin.replace:
+        path: /mnt/apps/html/functions.php
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.line }}"
+      loop:
+        - { regexp: '^admin', line: "webaccess" }
+        - { regexp: '^admin', line: "12345" }
+        
+    - name: bypass, replace module not having desired effect
+      raw: sed -i '5 s/admin/{{ item }}/' /mnt/apps/html/functions.php
+      loop:
+        - webaccess
+        - 123456
+  

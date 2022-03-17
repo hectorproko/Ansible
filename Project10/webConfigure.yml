@@ -1,0 +1,39 @@
+- name: Configuring Web #Second Play
+  hosts: _web8
+  gather_facts: false
+  remote_user: ec2-user
+
+  vars_files:
+    - /etc/ansible/vars/info.yml
+
+  tasks:
+    - name: Pinging
+      ping:
+
+    - name: Install Apache
+      package:
+        name: httpd
+        state: present  
+        
+    - name: Start Apache on boot
+      ansible.builtin.service:
+        name: httpd
+        enabled: yes
+          
+    - name: daemon-reload
+      systemd:
+        name: httpd
+        state: started
+        daemon_reload: yes
+        
+#sudo setenforce 0 need to fstab this
+
+    - name: Disable SELinux #need to check if it remains after boot
+      ansible.posix.selinux:
+        state: disabled
+      
+
+    
+    
+
+
