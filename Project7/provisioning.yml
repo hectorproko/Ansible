@@ -72,15 +72,15 @@
     #- name: debugEBS
       #debug:
         #var: ansibleEBS
+        
+    #Troubleshooting    
     - name: Setting facts so that they will be persisted in the fact cache
       set_fact:
         privateIP: ec2nfs.instances[0].private_ip
-    
     - name: Output Private IP
       debug:
         var: "{{ privateIP }}"
-
-    - name: output the private ip
+    - name: Output Private IP
       ansible.builtin.debug:
         msg: 'Trouble shooting IP string {{ ec2nfs.instances[0].private_ip }}'
         
@@ -89,7 +89,7 @@
         aws_access_key: "{{ aws_id }}"
         aws_secret_key: "{{ aws_key }}"
         region: "{{ aws_region }}"
-        image: ami-019599717e2dd5baa #Static for testing image: "{{ latest_ami.image_id }}"
+        image: "{{ latest_ami.image_id }}"
         instance_type: t2.micro
         key_name: "{{ ssh_keyname }}"
         count: 1 #number of instnaces to launch
@@ -102,18 +102,18 @@
           Name: web7 # 7 for project 7
       register: ec2web
     
-    #Seems to be creating a pantom "ec2nfs.instances[0].private_ip": "172.31.93.42"
-    # - name: Calling Playbook                                                             #I think the issues is a result of NFSconfigure having to come first
-      # command: ansible-playbook webConfigure.yml --extra-vars "privateIP='172.31.93.42'" #This doesnt work in the mount step, i think is the fact that it doesnt exist
-
-#sudo ansible-playbook webConfigure.yml --extra-vars "privateIP=172.31.86.128", this did not work even with current IP
     - name: Calling NFSconfigure
       command: ansible-playbook NFSconfigure.yml
+      register: NFSconfigure
+      
+    - name: Output NFSconfigure
+      debug:
+        var: NFSconfigure   
+      
     - name: Calling webConfigure
-      command: ansible-playbook webConfigure.yml --extra-vars "privateIP={{ ec2nfs.instances[0].private_ip }}" #favorate solut
-      # - name: Calling Playbook
-        # command: ansible-playbook test.yml --extra-vars "privateIP='{{ ec2nfs.instances[0].private_ip }}'"
-      # - name: Calling Playbook
-        # command: ansible-playbook test.yml --extra-vars 'privateIP="172.31.93.42"'
-      # - name: Calling Playbook
-        # command: ansible-playbook test.yml --extra-vars "privateIP=172.31.93.42"
+      command: ansible-playbook webConfigure.yml --extra-vars "privateIP={{ ec2nfs.instances[0].private_ip }}" 
+      register: webConfigure
+
+    - name: Output webConfigure
+      debug:
+        var: webConfigure 
