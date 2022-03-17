@@ -80,7 +80,10 @@
       debug:
         var: "{{ privateIP }}"
 
-
+    - name: output the private ip
+      ansible.builtin.debug:
+        msg: 'Trouble shooting IP string {{ ec2nfs.instances[0].private_ip }}'
+        
     - name: WebServer
       ec2:
         aws_access_key: "{{ aws_id }}"
@@ -100,5 +103,17 @@
       register: ec2web
     
     #Seems to be creating a pantom "ec2nfs.instances[0].private_ip": "172.31.93.42"
-    #- name: Calling Playbook
-      #command: ansible-playbook NFSconfigure.yml
+    # - name: Calling Playbook                                                             #I think the issues is a result of NFSconfigure having to come first
+      # command: ansible-playbook webConfigure.yml --extra-vars "privateIP='172.31.93.42'" #This doesnt work in the mount step, i think is the fact that it doesnt exist
+
+#sudo ansible-playbook webConfigure.yml --extra-vars "privateIP=172.31.86.128", this did not work even with current IP
+    - name: Calling NFSconfigure
+      command: ansible-playbook NFSconfigure.yml
+    - name: Calling webConfigure
+      command: ansible-playbook webConfigure.yml --extra-vars "privateIP={{ ec2nfs.instances[0].private_ip }}" #favorate solut
+      # - name: Calling Playbook
+        # command: ansible-playbook test.yml --extra-vars "privateIP='{{ ec2nfs.instances[0].private_ip }}'"
+      # - name: Calling Playbook
+        # command: ansible-playbook test.yml --extra-vars 'privateIP="172.31.93.42"'
+      # - name: Calling Playbook
+        # command: ansible-playbook test.yml --extra-vars "privateIP=172.31.93.42"
