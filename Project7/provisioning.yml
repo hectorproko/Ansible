@@ -157,7 +157,7 @@
         instance_tags:
           Name: web7 # 7 for project 7
       register: ec2web
-    
+ 
     - name: Calling NFSconfigure
       command: ansible-playbook NFSconfigure.yml
       register: NFSconfigure
@@ -173,3 +173,5 @@
     - name: Output webConfigure
       debug:
         var: webConfigure 
+        
+        

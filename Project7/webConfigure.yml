@@ -7,31 +7,28 @@
     - /etc/ansible/vars/info.yml
 
   tasks:
-    #- name: Settting NFS private IP variable
-      #set_fact:
-        #NFS_ip: {{ privateIP }} #<change IP of NFS, pending 
-      
     - name: Pinging
       ping:
     
-    - name: Install NFS client
+    - name: Install NFS client, mysql client
       package:
         name: 
           - mysql
           - nfs-utils
           - nfs4-acl-tools
         state: present
-#Need to turn on NFS
-
-    #- name: fstab
-      #lineinfile:
-        #path: /etc/fstab
-        #line: "{{ item }}"
-      #loop:
-        #- 172.31.81.122:/mnt/apps /var/www nfs defaults 0 0
-        #- 172.31.81.122:/mnt/logs /var/log/httpd/ nfs defaults 0 0
         
-    #this stopped working
+    - name: Installing php
+      yum:
+        enablerepo: "remi,remi-php80" 
+        name:
+         - php
+         - php-gd
+         - php-curl 
+         - php-mysqlnd
+         - php-mysqli
+        state: latest
+
     - name: Create www dir
       file:
         path: /var/www
@@ -48,9 +45,6 @@
         opts: rw,nosuid
         state: mounted #this mounts it
         
- #sudo mount -t nfs -o rw,nosuid 172.31.80.216:/mnt/apps /var/www 
- #sudo mount -t nfs -o rw,nosuid 172.31.88.22:/mnt/logs /var/log/httpd/
-
     - name: Install Apache
       package:
         name: httpd
@@ -76,13 +70,6 @@
       ansible.posix.selinux:
         state: disabled
         
-    #DB Client
-    - name: Install MySQL-Client
-      package:
-        name: 
-          - mysql #comes installed with redhat, i think
-        state: present
-    
     
 
 
