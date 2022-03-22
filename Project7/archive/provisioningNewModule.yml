@@ -102,6 +102,10 @@
           Name: NFS
       register: ec2nfs
 
+    #- name: Print the results
+      #debug:
+        #var: ec2nfs
+
     - name: Create EBS
       ec2_vol:
         aws_access_key: "{{ aws_id }}"
@@ -121,30 +125,59 @@
         - { name: 'Project7Ansible3', mapping: '/dev/xvdh' }
       register: ansibleEBS
 
+    #- name: debugEBS
+      #debug:
+        #var: ansibleEBS
+        
+    #Troubleshooting    
+    # - name: Setting facts so that they will be persisted in the fact cache
+      # set_fact:
+        # privateIP: ec2nfs.instances[0].private_ip
+    # - name: Output Private IP
+      # debug:
+        # var: "{{ privateIP }}"
     - name: Output Private IP
       ansible.builtin.debug:
         msg: 'Trouble shooting IP string {{ ec2nfs.instances[0].private_ip }}'
         
+    # - name: WebServer
+      # ec2:
+        # aws_access_key: "{{ aws_id }}"
+        # aws_secret_key: "{{ aws_key }}"
+        # region: "{{ aws_region }}"
+        # image: "{{ latest_ami.image_id }}"
+        # instance_type: t2.micro
+        # key_name: "{{ ssh_keyname }}"
+        # count: 1 #number of instnaces to launch
+        # state: present
+        # group_id: "{{ Project7_web.group_id }}" 
+        # wait: yes
+        # vpc_subnet_id: "{{ subnet }}" #172.31.80.0/20, needs to be dynamic
+        # assign_public_ip: yes
+        # instance_tags:
+          # Name: web7 # 7 for project 7
+      # register: ec2web
+      
     - name: WebServer
-      ec2:
+      amazon.aws.ec2_instance:
         aws_access_key: "{{ aws_id }}"
         aws_secret_key: "{{ aws_key }}"
         region: "{{ aws_region }}"
-        image: "{{ latest_ami.image_id }}"
+        image_id: "{{ latest_ami.image_id }}"      
         instance_type: t2.micro
         key_name: "{{ ssh_keyname }}"
-        count: 1 #number of instnaces to launch
-        state: present
-        group_id: "{{ Project7_web.group_id }}" 
+        state: present         #count: 1 #number of instnaces to launch
         wait: yes
         vpc_subnet_id: "{{ subnet }}" #172.31.80.0/20, needs to be dynamic
-        assign_public_ip: yes
-        instance_tags:
-          Name: web7 # 7 for project 7
+        network:
+          assign_public_ip: true
+          groups : "{{ Project7_web.group_id }}" 
+        name: web7
       register: ec2web
- 
+        
+        
     - name: Calling NFS/WEB configuration
-      command: sudo ansible-playbook NFS+WEB_configure.yml --extra-vars "privateIP={{ ec2nfs.instances[0].private_ip }}" 
+      command: ansible-playbook NFS+WEB_configure.yml --extra-vars "privateIP={{ ec2nfs.instances[0].private_ip }}" 
       # register: webConfigure
     # - name: Output webConfigure
       # debug:
