@@ -225,7 +225,19 @@
             owner: nobody
             group: nobody
             mode: '0777'
-
+            
+        #Needs Trouble Shooting
+        # - name: Mount #fails if NFS server is not up
+          # ansible.posix.mount:
+            # path: "{{ item.path}}"
+            # src: "{{ item.source}}" #NFS server PrivateIP
+            # fstype: nfs
+            # opts: rw,nosuid
+            # state: mounted #this mounts it
+          # loop:
+            # -  { path: '/var/www', source: '"{{ nfsIP }}:/mnt/apps"' }
+            # -  { path: '/var/log/httpd/', source: '"{{ nfsIP }}:/mnt/logs"' }
+            
         - name: Mount apps #fails if NFS server is not up
           ansible.posix.mount:
             path: /var/www
