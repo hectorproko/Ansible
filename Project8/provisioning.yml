@@ -27,7 +27,7 @@
         aws_access_key: "{{ aws_id }}"
         aws_secret_key: "{{ aws_key }}"
         region: "{{ aws_region }}"
-        name: "Project7"
+        name: "Project7_NFS"
         description: "Security Group for NFS/DB server"
         vpc_id: "{{ default_vpc.vpcs[0].vpc_id }}"
         rules:
@@ -146,7 +146,7 @@
         state: present
         group_id: "{{ Project8_web.group_id }}" 
         wait: yes
-        vpc_subnet_id: "{{ subnet }}" #172.31.80.0/20, needs to be dynamic
+        vpc_subnet_id: "{{ subnet }}"
         assign_public_ip: yes
         instance_tags:
           Name: web7 # 7 for project 7

@@ -48,7 +48,7 @@
             cidr_ip: 172.31.80.0/20
       register: Project7_NFS
 
-    - name: Create Security Group web
+    - name: Create Security Group Web Server
       ec2_group:
         aws_access_key: "{{ aws_id }}"
         aws_secret_key: "{{ aws_key }}"
