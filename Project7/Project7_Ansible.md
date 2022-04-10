@@ -195,7 +195,7 @@ Simple ping test
         - name: Pinging NFS
           ping:
 ```
-Partitioning drives
+Partitioning drives using module **parted**
 ``` bash
         - name: Partitioning
           parted:
@@ -224,7 +224,7 @@ Installing some packages
             enabled: yes
 ```
 
-Creating **Logical Volumes**
+Creating **Volume Groups**,**Logical Volumes** and formating them. Using modules **lvg**, **lvol** and **filesystem**
 ``` bash
         - name: Create VG #Creating Volume Groups
           lvg:
@@ -256,7 +256,7 @@ Creating **Logical Volumes**
             - /dev/vg-logs/lv-logs
             - /dev/vg-opt/lv-opt
 ```
-Creatin
+Creating directories that we need to **mount**. Using modules **file** and **mount**
 ``` bash
         - name: Creating mounting directories
           file:
@@ -281,13 +281,16 @@ Creatin
             -  { dir: '/mnt/logs', lv: '/dev/vg-logs/lv-logs' }
             -  { dir: '/mnt/opt', lv: '/dev/vg-opt/lv-opt' }
 ```
-
+``` bash
+        # Restart to reload config
         - name: daemon-reload
           systemd:
             name: nfs-server
             state: restarted
             daemon_reload: yes
-          
+```
+
+``` bash
         - name: exports 
           lineinfile:
             path: /etc/exports
