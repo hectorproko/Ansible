@@ -224,7 +224,7 @@ Installing some packages using module **package**. Enabling start after boot wit
             enabled: yes
 ```
 
-Creating **Volume Groups**,**Logical Volumes** and formating them using modules **lvg**, **lvol** and **filesystem**
+Creating **Volume Groups**, **Logical Volumes** and formating them using modules **lvg**, **lvol** and **filesystem**
 ``` bash
         - name: Create VG #Creating Volume Groups
           lvg:
@@ -301,10 +301,10 @@ Configuring access to NFS for clients within the same subnet using modules **lin
             - /mnt/opt 172.31.80.0/20(rw,sync,no_all_squash,no_root_squash)
 
         - name: exportfs -arv
-          shell: #Used to run command like raw
+          shell: #Used to run commands directly 
             cmd: exportfs -arv
 ```
-
+Making sure the previously created directories have the right owner and permissions
 ``` bash
         - name: Changing dir owner/permission 
           file:
@@ -318,15 +318,20 @@ Configuring access to NFS for clients within the same subnet using modules **lin
             - /mnt/logs
             - /mnt/opt
 ```
-
+Using module **git** to download the tooling website
+```
         - name: Git
           ansible.builtin.git:
             repo: 'https://github.com/hectorproko/tooling.git'
             dest: /home/ec2-user/tooling 
+```
 
-        - name: Copydir #This turns apps back to root
+``` bash
+        - name: Copydir #This turns apps back to owner root, will cause access issues
           command: cp -R /home/ec2-user/tooling/html /mnt/apps   
-      
+``` 
+Installing MySQL using module **package** and **service** to start it
+``` bash
         #Database Configuration
         - name: Install MySQL
           package:
@@ -340,12 +345,15 @@ Configuring access to NFS for clients within the same subnet using modules **lin
             name: mysqld
             state: started
             enabled: yes
+```
 
+Using module **pip** to intall **pymysql** a requirement for modules mysql_db, mysql_query and mysql_user
+``` bash
         - name: Make sure pymysql is present
           pip:
             name: pymysql
             state: present
-
+```
         - name: Create a new database with name 'tooling'
           mysql_db:
             name: tooling
