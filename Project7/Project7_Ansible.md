@@ -494,3 +494,14 @@ Disabling SELinux for testing. We also reach the end of the **block:** with the 
           when: inventory_hostname in groups['_web7'] #loop: "{{ groups['_web8'] }}"
           remote_user: ec2-user 
 ```  
+
+Overview of Web config **block:**
+``` bash
+    - name: web7 Configure
+      block:
+        ...
+        ...
+        ...
+      when: inventory_hostname in groups['_web7']
+      remote_user: ec2-user 
+```

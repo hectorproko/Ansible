@@ -257,5 +257,5 @@
         - name: Disable SELinux #need to check if it remains after boot
           ansible.posix.selinux:
             state: disabled
-          when: inventory_hostname in groups['_web7'] #loop: "{{ groups['_web8'] }}"
-          remote_user: ec2-user   
+      when: inventory_hostname in groups['_web7'] #loop: "{{ groups['_web8'] }}"
+      remote_user: ec2-user   
