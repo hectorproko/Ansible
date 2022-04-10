@@ -187,7 +187,7 @@ This playbook configures the instances previously provisioned with their respect
   vars_files:
     - /etc/ansible/vars/info.yml
 ```
-Simple ping test
+Beginning of tasks with a simple ping test
 ``` bash
   tasks:
     - name: NFS Configure
@@ -354,6 +354,9 @@ Using module **pip** to intall **pymysql** a requirement for modules mysql_db, m
             name: pymysql
             state: present
 ```
+
+Using module **mysql_db** to create database and module **raw** to run command that executes script **tooling-db.sql**. Script creates a table **users** in database **tooling** and creates an entry for admin (not going to use this user)
+``` bash
         - name: Create a new database with name 'tooling'
           mysql_db:
             name: tooling
@@ -362,12 +365,16 @@ Using module **pip** to intall **pymysql** a requirement for modules mysql_db, m
         #Name Runnign script
         - name: Running script to insert in tooling
           raw: mysql tooling < /home/ec2-user/tooling/tooling-db.sql
-      
+```
+Running query to insert a **user** into table using module **mysql_query**
+``` bash
         - name: Inserting a user to test
           community.mysql.mysql_query:
             login_db: tooling
             query: INSERT INTO `users` (`id`, `username`, `password`, `email`, `user_type`, `status`) VALUES (2, 'myuser', '12345', 'user@mail.com', 'admin', '1');   
-     
+```
+Creating user to log in to database using module **mysql_user**
+``` bash 
         - name: Create database user with name 'webaccess' and password '12345' with all database privileges
           mysql_user:
             name: webaccess
@@ -375,7 +382,9 @@ Using module **pip** to intall **pymysql** a requirement for modules mysql_db, m
             priv: '*.*:ALL' #all database privileges
             host: 172.31.80.0/20 #the host part of the username, subnet
             state: present
-        
+```
+Using module **replace** to search/replace unsuccessfully resorted to usind **raw** commands, pending troubleshoot
+``` bash
         #This is not working    
         - name: Input tooling credentials
           ansible.builtin.replace:
@@ -390,18 +399,32 @@ Using module **pip** to intall **pymysql** a requirement for modules mysql_db, m
           loop:
             - webaccess
             - 123456        
-      when: inventory_hostname in groups['_NFS']
+      when: inventory_hostname in groups['_NFS'] # Execute this block when target host is  NFS
       remote_user: ec2-user   
-      #when: inventory_hostname in groups['_web7'] #loop: "{{ groups['_web8'] }}"
+```
+Overview of block. We just finished our first block of code. When the condition of target host = NFS is met executes everything inside **block:**. This way we separate configuration targeted to our NFS server as oppose to Web servers
+``` bash
+  tasks:
+    - name: NFS Configure
+      block:
+        ...
+        ...
+        ...
+      when: inventory_hostname in groups['_NFS'] 
+      remote_user: ec2-user   
+```
 
-
-
-
+### Starting configuration for Web Servers
+Module **ping** once again
+``` bash
     - name: web7 Configure
       block:
         - name: Pinging _web7
           ping:
-          
+```
+
+Installing software this time also using module **yum** 
+``` bash
         - name: Install NFS client, mysql client
           package: #yum: 
             name: #nfs4-acl-tools giving error [Errno 12] Cannot allocate memory
@@ -420,7 +443,10 @@ Using module **pip** to intall **pymysql** a requirement for modules mysql_db, m
              - php-mysqlnd
              - php-mysqli
             state: latest
+```
 
+Again we create a directory and mount it
+``` bash
         - name: Create www dir, mount NFS
           file:
             path: /var/www
@@ -436,7 +462,9 @@ Using module **pip** to intall **pymysql** a requirement for modules mysql_db, m
             fstype: nfs
             opts: rw,nosuid
             state: mounted #this mounts it
-        
+```
+Installing software and starting it. Using module **command** to run direct command to rename a file
+``` bash
         - name: Install Apache
           package:
             name: httpd
@@ -455,10 +483,14 @@ Using module **pip** to intall **pymysql** a requirement for modules mysql_db, m
             name: httpd
             state: started
             daemon_reload: yes
-        
+```
+
+Disabling SELinux for testing. We also reach the end of the **block:** with the conditions in **when:** and **remote_user:**
+``` bash 
         #sudo setenforce 0 need to fstab this
         - name: Disable SELinux #need to check if it remains after boot
           ansible.posix.selinux:
             state: disabled
           when: inventory_hostname in groups['_web7'] #loop: "{{ groups['_web8'] }}"
-          remote_user: ec2-user   
+          remote_user: ec2-user 
+```  
