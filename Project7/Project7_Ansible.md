@@ -208,7 +208,7 @@ Partitioning drives using module **parted**
             - /dev/xvdg
             - /dev/xvdh
 ``` 
-Installing some packages
+Installing some packages using module **package**. Enabling start after boot with **service**
 ```bash
         - name: Install lvm2 dependency, nfs-utils
           package:
@@ -224,7 +224,7 @@ Installing some packages
             enabled: yes
 ```
 
-Creating **Volume Groups**,**Logical Volumes** and formating them. Using modules **lvg**, **lvol** and **filesystem**
+Creating **Volume Groups**,**Logical Volumes** and formating them using modules **lvg**, **lvol** and **filesystem**
 ``` bash
         - name: Create VG #Creating Volume Groups
           lvg:
@@ -256,7 +256,7 @@ Creating **Volume Groups**,**Logical Volumes** and formating them. Using modules
             - /dev/vg-logs/lv-logs
             - /dev/vg-opt/lv-opt
 ```
-Creating directories that we need to **mount**. Using modules **file** and **mount**
+Creating directories that we need to mount and mounting them, using modules **file** and **mount**
 ``` bash
         - name: Creating mounting directories
           file:
@@ -289,7 +289,7 @@ Creating directories that we need to **mount**. Using modules **file** and **mou
             state: restarted
             daemon_reload: yes
 ```
-
+Configuring access to NFS for clients within the same subnet using modules **lineinfile** and **shell**
 ``` bash
         - name: exports 
           lineinfile:
@@ -301,10 +301,12 @@ Creating directories that we need to **mount**. Using modules **file** and **mou
             - /mnt/opt 172.31.80.0/20(rw,sync,no_all_squash,no_root_squash)
 
         - name: exportfs -arv
-          shell:
+          shell: #Used to run command like raw
             cmd: exportfs -arv
-    
-        - name: Changing dir owner/permission #running it once doesnt change owner/permission
+```
+
+``` bash
+        - name: Changing dir owner/permission 
           file:
             path: "{{ item }}"
             state: directory
@@ -315,7 +317,8 @@ Creating directories that we need to **mount**. Using modules **file** and **mou
             - /mnt/apps
             - /mnt/logs
             - /mnt/opt
-        
+```
+
         - name: Git
           ansible.builtin.git:
             repo: 'https://github.com/hectorproko/tooling.git'
