@@ -1,4 +1,4 @@
-- name: Start Configuring NFS #Second Play
+- name: Start Configuring NFS & Web #Second Play
   hosts: _NFS, _web7
   gather_facts: false
   remote_user: ec2-user
