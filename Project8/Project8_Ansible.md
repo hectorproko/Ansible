@@ -91,7 +91,7 @@ First change is to the **Security Group** applied to **Web** servers. Name chang
       register: Project8_web
 ```
 
-When provisioning our Web instances we are requesting 2 instead of 1 and reference to a new Security Group **Project8_web**
+When provisioning our Web instances we are requesting **2 instead of 1** and reference to a new Security Group **Project8_web**
 ``` bash
     - name: WebServer
       ec2:
@@ -103,15 +103,73 @@ When provisioning our Web instances we are requesting 2 instead of 1 and referen
         key_name: "{{ ssh_keyname }}"
         count: 2 #number of instnaces to launch
         state: present
-        group_id: "{{ Project8_web.group_id }}" 
+        group_id: "{{ Project8_web.group_id }}" #<<
         wait: yes
         vpc_subnet_id: "{{ subnet }}"
         assign_public_ip: yes
         instance_tags:
-          Name: web7 # 7 for project 7
+          Name: web7 #Name tag, 7 for project 7
       register: ec2web
 ```
 
+Using module **set_fact:** to create variables to store IPs to later output them with module **debug**. They need to show in console output so **play.sh** can extract them. *Use of variables is not necessary to output IPs to console*
+
+``` bash
+    - name: Setting facts so that they will be persisted in the fact cache
+      set_fact:
+        webIP: ec2web.instances[0].private_ip
+        
+    - name: Setting facts so that they will be persisted in the fact cache
+      set_fact:
+        webIP2: ec2web.instances[1].private_ip
+        
+    - name: Output web1 Private IP
+      debug:
+        var: "{{ webIP }}"
+        
+    - name: Output web2 Private IP
+      debug:
+        var: "{{ webIP2 }}"
+```
+A **Security Group** for the **Load Balancer** named **Project8_LB**
+``` bash
+    - name: Create Security Group Apache LB
+      ec2_group:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        name: "Project8_LB"
+        description: "Security Group for Apache LB server"
+        vpc_id: "{{ default_vpc.vpcs[0].vpc_id }}"
+        rules:
+          - proto: "tcp" 
+            ports: "22" #remote using ssh
+            cidr_ip: 0.0.0.0/0
+          - proto: "tcp"
+            ports: "80" #http
+            cidr_ip: 0.0.0.0/0
+      register: Project8_LB
+```
+Provisioning an instance for the role of **Load Balancer**.
+``` bash
+    - name: Ubuntu Apache LB
+      ec2:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        image: ami-04505e74c0741db8d # Ubuntu 64-bit x86
+        instance_type: t2.micro
+        key_name: "{{ ssh_keyname }}"
+        count: 1
+        state: present
+        group_id: "{{ Project8_LB.group_id }}"
+        wait: yes
+        vpc_subnet_id: "{{ subnet }}"
+        assign_public_ip: yes
+        instance_tags:
+          Name: LB
+      register: ec2nfs
+```
 ## NFS+WEB_configure.yml
 ## LBconfigure.yml
 
