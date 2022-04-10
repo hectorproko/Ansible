@@ -167,7 +167,7 @@ Provisioning instance for Web Server
           Name: web7 # 7 for project 7
       register: ec2web
  ```
-Calling a playbook and passing it the private IP of NFS server
+Calling a playbook and passing it the private IP of NFS server. The playbook **NFS+WEB_configure.yml** stores the IP in its own variable **privateIP**
  ``` bash
     - name: Calling NFS/WEB configuration 
       command: sudo ansible-playbook NFS+WEB_configure.yml --extra-vars "privateIP={{ ec2nfs.instances[0].private_ip }}" 
@@ -445,7 +445,7 @@ Installing software this time also using module **yum**
             state: latest
 ```
 
-Again we create a directory and mount it
+Again we create a directory and mount it. Here we make use of variable **privateIP** containing the Private IP of the NFS server passed as a parameter during execution of playbook
 ``` bash
         - name: Create www dir, mount NFS
           file:

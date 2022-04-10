@@ -150,7 +150,7 @@ A **Security Group** for the **Load Balancer** named **Project8_LB**
             cidr_ip: 0.0.0.0/0
       register: Project8_LB
 ```
-Provisioning an instance for the role of **Load Balancer**.
+Provisioning an instance for the role of **Load Balancer**. We are hardcoding the image id to use **Ubuntu** and reference the corresponding Security Group **Project8_LB**
 ``` bash
     - name: Ubuntu Apache LB
       ec2:
@@ -171,5 +171,94 @@ Provisioning an instance for the role of **Load Balancer**.
       register: ec2nfs
 ```
 ## NFS+WEB_configure.yml
+The playbook that configures NFS and Web servers also has few changes  
+
+The variable that stores NFS server's IP is now **nfsIP** instead of PrivateIP.
+```bash
+        - name: Mount apps #fails if NFS server is not up
+          ansible.posix.mount:
+            path: /var/www
+            src: "{{ nfsIP }}:/mnt/apps" #NFS server PrivateIP
+            fstype: nfs
+            opts: rw,nosuid
+            state: mounted #this mounts it
+```
+
+We mount an additional directory for logs. All web servers log in one central place
+```bash
+        - name: Mount logs #fails if NFS server is not up
+          ansible.posix.mount:
+            path: /var/log/httpd/
+            src: "{{ nfsIP }}:/mnt/logs" #NFS server PrivateIP
+            fstype: nfs
+            opts: rw,nosuid
+            state: mounted #this mounts it
+```
+
 ## LBconfigure.yml
+
+We load our target **hosts:** with Load Balancer instance tagged **LB**. Remote user is now **ubuntu** because we are using **Ubuntu** OS
+``` bash
+- name: Start Configuring LB #Second Play
+  hosts: _LB 
+  gather_facts: false
+  remote_user: ubuntu #we need user for Ubuntu OS
+```
+Importing some variables from **info.yml**
+``` bash
+  vars_files:
+    - /etc/ansible/vars/info.yml
+```
+
+Installing software using module **apt**
+``` bash
+    - name: Install a list of packages
+      apt:
+        update_cache : yes
+        pkg:
+        - apache2
+        - libxml2-dev
+```
+
+Enabling Apache2 modules with **apache2_module**
+``` bash
+    - name: Enable the Apache2 modules
+      community.general.apache2_module:
+        state: present
+        name: "{{ item }}"
+      loop: #List of modules to loop
+        - rewrite
+        - proxy
+        - proxy_http
+        - headers
+        - lbmethod_bytraffic
+      ignore_errors: yes  
+```
+Using module **copy** to create a backup of  **000-default.conf** before overwriting it with out configuration in **LBconfigure** 
+``` bash
+    - name: 000-default.conf Backup
+      ansible.builtin.copy:
+        src: /etc/apache2/sites-available/000-default.conf
+        dest: /etc/apache2/sites-available/000-default.confBAK
+        remote_src: yes
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Input Config File
+      ansible.builtin.copy:
+        src: LBconfigure
+        dest: /etc/apache2/sites-available/000-default.conf
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+```
+Restarting apache2
+``` bash
+    - name: Restart apache2
+      ansible.builtin.systemd:
+        state: restarted
+        name: apache2
+      ignore_errors: yes  
+```
 
