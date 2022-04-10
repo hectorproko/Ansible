@@ -226,7 +226,7 @@ Installing some packages
 
 Creating **Logical Volumes**
 ``` bash
-        - name: Create VG
+        - name: Create VG #Creating Volume Groups
           lvg:
             vg: "{{ item.vg }}"
             pvs: "{{ item.pvs }}"
@@ -247,16 +247,17 @@ Creating **Logical Volumes**
             - { vg: 'vg-opt', lv: 'lv-opt'}
           ignore_errors: yes #for testing purposes, prevents the playbook run from stopping when an error occurs in this section
       
-        - name: Format
+        - name: Format 
           filesystem:
-            fstype: xfs
+            fstype: xfs #format the logical volumes as xfs 
             dev: "{{ item }}" #looping var
           loop:
             - /dev/vg-apps/lv-apps
             - /dev/vg-logs/lv-logs
             - /dev/vg-opt/lv-opt
 ```
-
+Creatin
+``` bash
         - name: Creating mounting directories
           file:
             path: "{{ item }}"
@@ -279,6 +280,7 @@ Creating **Logical Volumes**
             -  { dir: '/mnt/apps', lv: '/dev/vg-apps/lv-apps' }
             -  { dir: '/mnt/logs', lv: '/dev/vg-logs/lv-logs' }
             -  { dir: '/mnt/opt', lv: '/dev/vg-opt/lv-opt' }
+```
 
         - name: daemon-reload
           systemd:
