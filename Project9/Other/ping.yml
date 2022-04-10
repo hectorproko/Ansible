@@ -1,0 +1,25 @@
+
+- name: Start Configuring
+  hosts: _Jenkins9
+  gather_facts: 
+  remote_user: ec2-user
+
+  vars_files:
+    - /etc/ansible/vars/info.yml
+    
+  tasks:
+    - name: Pinging
+      ping:
+
+    - name: allocate a new elastic IP and associate it with an instance
+      community.aws.ec2_eip:
+        device_id: i-1212f003
+
+    - name: allocate a new elastic IP without associating it to anything
+      community.aws.ec2_eip:
+        state: present
+      register: eip
+
+    - name: output the IP
+      ansible.builtin.debug:
+        msg: "Allocated IP is {{ eip.public_ip }}"

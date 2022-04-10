@@ -226,7 +226,7 @@
             group: nobody
             mode: '0777'
             
-        #Needs Trouble Shooting
+        #Needs Troubleshooting
         # - name: Mount #fails if NFS server is not up
           # ansible.posix.mount:
             # path: "{{ item.path}}"

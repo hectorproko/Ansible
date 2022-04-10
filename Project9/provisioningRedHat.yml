@@ -1,0 +1,92 @@
+#Comibing Creation of EC2 with EBS attaching them, Configuring NFS 
+---
+- name: Start
+  hosts: localhost
+  remote_user: Ansible
+  gather_facts: false
+
+  vars_files:
+    - /etc/ansible/vars/info.yml
+
+  tasks:
+    - name: Getting Default VPC
+      amazon.aws.ec2_vpc_net_info:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        filters:
+          "tag:Name": Default
+      register: default_vpc
+
+    - name: Create Security Group Jenkins Server
+      ec2_group:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        name: "Project9_jenkins"
+        description: "Security Group for Project 9 jenkins server"
+        vpc_id: "{{ default_vpc.vpcs[0].vpc_id }}"
+        rules:
+          - proto: "tcp" 
+            ports: "22" #remote using ssh
+            cidr_ip: 0.0.0.0/0
+          - proto: "tcp"
+            ports: "8080" #http
+            cidr_ip: 0.0.0.0/0 
+      register: Project9_jenkins
+      
+      
+    - name: Find AMIs published by Red Hat (309956199498). Non-beta and x86
+      ec2_ami_info:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        owners: 309956199498
+        filters:
+          architecture: x86_64
+          name: RHEL-8*HVM-*
+      register: amis
+
+    - name: Get the latest one
+      set_fact:
+        latest_ami: "{{ amis.images | sort(attribute='creation_date') | last }}"
+
+    - name: RedHat instance for Jenkins
+      ec2:
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        image:  "{{ latest_ami.image_id }}" #Static for testing image: "{{ latest_ami.image_id }}"
+        instance_type: t2.micro
+        key_name: "{{ ssh_keyname }}"
+        count: 1 #number of instnaces to launch
+        state: present
+        group_id: "{{ Project9_jenkins.group_id }}"  # Need to be dynamic, diff than NFS one, this one open 80
+        wait: yes
+        vpc_subnet_id: subnet-18872839 #172.31.80.0/20, needs to be dynamic
+        assign_public_ip: yes
+        instance_tags:
+          Name: Jenkins9 # 7 for project 7
+      register: ec2jenkins
+      
+      
+    - name: allocate a new elastic IP 
+      community.aws.ec2_eip:
+        state: present
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+        device_id: "{{ ec2jenkins.instances[0].id }}"
+        allow_reassociation: true
+        in_vpc: true
+        reuse_existing_ip_allowed: true
+        tags:
+          reserved: nope
+        tag_name: reserved
+        tag_value: nope
+      register: eip
+      
+    - name: output the Elastic IP
+      ansible.builtin.debug:
+        msg: "Allocated IP is {{ ec2jenkins.instances[0].id }}" 
+

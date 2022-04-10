@@ -1,0 +1,79 @@
+
+- name: Start Configuring
+  hosts: _Jenkins9
+  gather_facts: false
+  remote_user: ubuntu
+
+  vars_files:
+    - /etc/ansible/vars/info.yml
+    
+  tasks:
+    - name: Pinging
+      ping:
+
+    - name: ensure the jenkins apt repository key is installed
+      apt_key: url=https://pkg.jenkins.io/debian-stable/jenkins.io.key state=present
+      become: yes
+
+    - name: ensure the repository is configured
+      apt_repository: repo='deb https://pkg.jenkins.io/debian-stable binary/' state=present
+      become: yes
+      
+    # - name: Download Long Term Jenkins release
+      # get_url:
+        # url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+        # dest: /etc/yum.repos.d/jenkins.repo
+
+    # - name: Import jenkins key from url
+      # ansible.builtin.rpm_key:
+        # state: present
+        # key: https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+
+      #enalbe jeknins on boot
+    - name: Install jenkins
+      apt:
+        name: 
+          - jenkins
+          - default-jdk-headless
+          - git
+        state: latest
+        
+    - name: daemon-reload to pick up config changes
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Start jenkins
+      ansible.builtin.systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+        
+    #Works if Jenkin already setup, did no install Publish Over SSH
+    # - name: Install plugin (Suggested)
+      # community.general.jenkins_plugin:
+        # name: 
+          # - Folders
+          # - build-pipeline-plugin
+          # - Folders 
+          # - OWASP Markup Formatter 
+          # - Build Timeout 
+          # - Credentials Binding 
+          # - Timestamper 
+          # - Workspace Cleanup 
+          # - Ant 
+          # - Gradle 
+          # - Pipeline 
+          # - GitHub Branch Source 
+          # - Pipeline: GitHub Groovy Libraries 
+          # - Pipeline: Stage View 
+          # - Git 
+          # - SSH Build Agents 
+          # - Matrix Authorization Strategy 
+          # - PAM Authentication 
+          # - LDAP 
+          # - Email Extension 
+          # - Mailer
+          # - Publish Over SSH #Not part of Suggested
+        # url_username: admin
+        # url_password: admin
+        # url: http://3.220.20.204:8080

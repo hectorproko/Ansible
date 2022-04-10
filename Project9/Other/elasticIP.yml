@@ -1,0 +1,48 @@
+#Comibing Creation of EC2 with EBS attaching them, Configuring NFS 
+---
+- name: Start
+  hosts: localhost
+  remote_user: Ansible
+  gather_facts: false
+  
+  vars_files:
+    - /etc/ansible/vars/info.yml
+    
+  tasks:
+    # - name: allocate a new elastic IP and associate it with an instance
+      # community.aws.ec2_eip:
+        # device_id: i-1212f003
+
+    - name: allocate a new elastic IP without associating it to anything
+      community.aws.ec2_eip:
+        state: present
+        aws_access_key: "{{ aws_id }}"
+        aws_secret_key: "{{ aws_key }}"
+        region: "{{ aws_region }}"
+      register: eip
+
+    - name: output the Elastic IP
+      ansible.builtin.debug:
+        msg: "Allocated IP is {{ eip.public_ip }}" 
+
+    # - name: output the interpreter
+      # ansible.builtin.debug:
+        # msg: "Output python {{ ansible_python_interpreter  }}"
+        
+    # - name: output the interpreter
+      # ansible.builtin.debug:
+        # msg: "Output python {{ regions  }}"
+        
+    # - name: output the interpreter
+      # ansible.builtin.debug:
+        # msg: 'Output python "{{ aws_access_key  }}"'
+
+    # - name: output the interpreter
+      # ansible.builtin.debug:
+        # msg: "Output python {{ aws_access_key  }}"
+        
+#sudo ansible-playbook elasticIP.yml -e 'ansible_python_interpreter=python3.8'
+#aws_access_key: AKIA4GNRQHE3ZE2HHQXB
+#aws_access_key: F5UCcyPm9VpwrXUFWgb1c/HIhffVAwSR+whhequ5
+  # regions:
+    # - "us-east-1"
