@@ -418,7 +418,7 @@ Overview of block. We just finished our first block of code. When the condition 
 Module **ping** once again
 ``` bash
     - name: web7 Configure
-      block:
+      block: #start of code block
         - name: Pinging _web7
           ping:
 ```
