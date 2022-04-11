@@ -19,17 +19,6 @@
       apt_repository: repo='deb https://pkg.jenkins.io/debian-stable binary/' state=present
       become: yes
       
-    # - name: Download Long Term Jenkins release
-      # get_url:
-        # url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
-        # dest: /etc/yum.repos.d/jenkins.repo
-
-    # - name: Import jenkins key from url
-      # ansible.builtin.rpm_key:
-        # state: present
-        # key: https://pkg.jenkins.io/redhat-stable/jenkins.io.key
-
-      #enalbe jeknins on boot
     - name: Install jenkins
       apt:
         name: 
