@@ -46,12 +46,12 @@
         key_name: "{{ ssh_keyname }}"
         count: 1 #number of instnaces to launch
         state: present
-        group_id: "{{ Project9_jenkins.group_id }}"  # Need to be dynamic, diff than NFS one, this one open 80
+        group_id: "{{ Project9_jenkins.group_id }}"  
         wait: yes
-        vpc_subnet_id: subnet-18872839 #172.31.80.0/20, needs to be dynamic
+        vpc_subnet_id: subnet-18872839
         assign_public_ip: yes
         instance_tags:
-          Name: Jenkins9 # 7 for project 7
+          Name: Jenkins9 # 9 for project 9
       register: ec2jenkins
       
       
