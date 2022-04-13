@@ -1,0 +1,22 @@
+--- 
+- name: update web servers
+  hosts: _Ansible
+  remote_user: ubuntu
+
+  vars_files:
+    - /etc/ansible/vars/info.yml
+    
+  tasks:
+    - name: Pinging
+      ping:
+
+- name: update db servers
+  hosts: _Target
+  remote_user: ubuntu
+
+  vars_files:
+    - /etc/ansible/vars/info.yml
+    
+  tasks:
+    - name: Pinging
+      ping:
