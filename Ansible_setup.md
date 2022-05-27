@@ -1,4 +1,4 @@
-# Project 7
+# Dynamic Inventory
 
 ``` bash
 hector@hector-Laptop:~/Ansible/Project10$ tree /etc/ansible/
