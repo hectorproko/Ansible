@@ -1,5 +1,6 @@
 # Dynamic Inventory
 
+I have 4 files **ansible.cfg**, **aws_ec2.yml**, **daro.io.pem** and **info.yml**
 ``` bash
 hector@hector-Laptop:~/Ansible/Project10$ tree /etc/ansible/
 /etc/ansible/
@@ -12,6 +13,8 @@ hector@hector-Laptop:~/Ansible/Project10$ tree /etc/ansible/
 2 directories, 8 files
 hector@hector-Laptop:~/Ansible/Project10$
 ```
+
+In the configuration file **ansible.cfg** Line 2 I specify the inventory to be **aws_ec2.yml** a plugin to get inventory dynamically from AWS
 ``` bash
 hector@hector-Laptop:/etc/ansible$ bat ansible.cfg
 ───────┬───────────────────────────────────────────────────────────────────────────
@@ -32,8 +35,8 @@ hector@hector-Laptop:/etc/ansible$ bat ansible.cfg
 ───────┴───────────────────────────────────────────────────────────────────────────
 hector@hector-Laptop:/etc/ansible$
 ```
+Inside **aws_ec2.yml** Line 11 I specify that I want to group my inventory based on tag Name
 
-At first I did not put aws credentials inside dynamic inventory and it worked fine but then I started to have issues and having it inside fixed it.
 ``` bash
 hector@hector-Laptop:/etc/ansible$ bat aws_ec2.yml
 ───────┬───────────────────────────────────────────────────────────────────────────
@@ -42,8 +45,8 @@ hector@hector-Laptop:/etc/ansible$ bat aws_ec2.yml
    1   │ plugin: aws_ec2
    2   │ 
    3   │ remote_user: Ansible #IAM user with AmazonEC2FullAccess
-   4   │ aws_access_key: XXXXXXXXXXXXXXXXXXXX 
-   5   │ aws_secret_key: XXXXXXXXXXXXXXXXXXXXXXXXXX
+   4   │   vars_files:
+   5   │    - /etc/ansible/vars/info.yml #Crendentials
    6   │  
    7   │  regions:
    8   │   - "us-east-1" 
@@ -55,7 +58,7 @@ hector@hector-Laptop:/etc/ansible$ bat aws_ec2.yml
 ───────┴───────────────────────────────────────────────────────────────────────────
 hector@hector-Laptop:/etc/ansible$
 ```
-Example dynamic inventory grouped with by tags
+Example of dynamic inventory grouped by **tag Name**
 ``` bash
 hector@hector-Laptop:/etc/ansible$ sudo ansible-inventory --graph
 @all:
@@ -77,6 +80,7 @@ hector@hector-Laptop:/etc/ansible$ sudo ansible-inventory --graph
   |--@ungrouped:
   ```
 
+**info.yml** holds the credentials name and path of **.pem**
   ``` bash
   hector@hector-Laptop:/etc/ansible$ bat vars/info.yml
 ───────┬───────────────────────────────────────────────────────────────────────────
